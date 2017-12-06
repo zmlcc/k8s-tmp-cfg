@@ -1,0 +1,53 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "etcd-3"
+  labels:
+    component: "etcd"
+spec:
+  replicas: 3
+  template:
+    metadata:
+      name: "etcd-3"
+      labels:
+        component: "etcd"
+    spec:
+      hostNetwork: true
+      containers:
+      - name: "etcd"
+        image: "uhub.service.ucloud.cn/wxyz/coreos-etcd"
+        ports:
+        - containerPort: 2379
+          name: client
+        - containerPort: 2380
+          name: peer
+        env:
+        - name: CLUSTER_SIZE
+          value: "3"
+        - name: SET_NAME
+          value: "etcd"
+        - name: PEERS
+          value: "etcd0:10.19.174.8 etcd1:10.19.51.63 etcd2:10.19.100.58"
+        command:
+          - "/bin/sh"
+          - "-ecx"
+          - |
+            tmp=$(echo $PEERS | sed -r 's/\s+/\\n/g')
+            IP=$(hostname -i | awk '{print $NF}')
+            NAME=$(echo -e $tmp |grep ${IP} | cut -d: -f1)
+            CLUSTER=$(echo -e $tmp | awk -F: '{printf("%s=http://%s:2380",c$1,$2);c=","} END{print ""}')
+            echo ${CLUSTER}
+            # for i in $(seq 1 ${CLUSTER_SIZE}); do
+            #   CLUSTER="${CLUSTER}${CLUSTER:+,}etcd-${i}=http://$(echo $PEERS|cut -d, -f $i):2380"
+            #   echo ${CLUSTER}
+            # done         
+            # start etcd. If cluster is already initialized the `--initial-*` options will be ignored.
+            exec etcd --name ${NAME} \
+              -listen-peer-urls http://0.0.0.0:2380 \
+              -listen-client-urls http://0.0.0.0:2379 \
+              -advertise-client-urls http://${IP}:2379 \
+              -initial-advertise-peer-urls http://${IP}:2380 \
+              -initial-cluster-token etcd-3 \
+              -initial-cluster ${CLUSTER} \
+              -initial-cluster-state new
+              --data-dir /var/run/etcd/default.etcd

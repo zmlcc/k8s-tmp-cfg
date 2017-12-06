@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: etcd-single
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels: 
+        name: etcd-single
+    spec:
+      hostNetwork: true
+      containers:
+      - name: etcd
+        image: uhub.service.ucloud.cn/wxyz/coreos-etcd
+        command:
+        - "/bin/sh"
+        - "-ecx"
+        - |
+          IP=$(ip -4  addr show eth0 |grep inet | awk '{print $2}' | cut  -d/ -f1)
+          /usr/local/bin/etcd \
+          -name etcd0 \
+          -advertise-client-urls http://${IP}:2379 \
+          -listen-client-urls http://0.0.0.0:2379 \
+          -initial-advertise-peer-urls http://${IP}:2380 \
+          -listen-peer-urls http://0.0.0.0:2380 \
+          -initial-cluster-token etcd-single \
+          -initial-cluster etcd0=http://${IP}:2380 \
+          -initial-cluster-state new
