@@ -1,0 +1,60 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    caas.version: 0.1.0 
+  labels:
+    io.caas.service: apiserver
+  name: api-tt
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        io.caas.service: apiserver
+    spec:
+      hostNetwork: true
+      containers:
+      - name: apiserver
+        image: uhub.service.ucloud.cn/wxyz/hyperkube:v1.8.4
+        env:
+        - name: ETCD_ADDR
+          value: "http://10.19.174.8:2379,http://10.19.51.63:2379,http://10.19.100.58:2379"
+        command: 
+        - /apiserver
+        - --bind-address=0.0.0.0
+        - --insecure-bind-address=0.0.0.0
+        - --kubernetes-service-node-port=31991
+        - --admission-control=NamespaceLifecycle,NodeRestriction,LimitRanger,DefaultStorageClass,ResourceQuota
+        - --enable-bootstrap-token-auth=true
+        - --service-account-key-file=/etc/k8s/ssl/sa.pub
+        - --authorization-mode=RBAC
+        - --apiserver-count=1
+        - --docker-only=true
+        - --etcd-servers=$(ETCD_ADDR)
+        - --runtime-config=api/all
+        - --enable-load-reader=true
+        - --target-ram-mb=2048
+        - --kubelet-timeout=10s
+        - --logtostderr=true
+        - --v=2
+        - --profiling=true
+        - --service-cluster-ip-range=192.168.0.0/24
+        - --service-node-port-range=30000-32767
+        - --storage-backend=etcd3
+        - --client-ca-file=/etc/k8s/ssl/ca.crt
+        - --kubelet-client-certificate=/etc/k8s/ssl/kubelet-client.crt 
+        - --kubelet-client-key=/etc/k8s/ssl/kubelet-client.key
+        - --tls-cert-file=/etc/k8s/ssl/ca.crt
+        - --tls-private-key-file=/etc/k8s/ssl/ca.key
+        volumeMounts:
+        - mountPath: /etc/k8s
+          name: etc-k8s
+      volumes:
+      - name: etc-k8s
+        hostPath:
+          # directory location on host
+          path: /var/lib/k8s
+      restartPolicy: Always
+

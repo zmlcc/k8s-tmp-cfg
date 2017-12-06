@@ -36,12 +36,6 @@ spec:
             IP=$(hostname -i | awk '{print $NF}')
             NAME=$(echo -e $tmp |grep ${IP} | cut -d: -f1)
             CLUSTER=$(echo -e $tmp | awk -F: '{printf("%s=http://%s:2380",c$1,$2);c=","} END{print ""}')
-            echo ${CLUSTER}
-            # for i in $(seq 1 ${CLUSTER_SIZE}); do
-            #   CLUSTER="${CLUSTER}${CLUSTER:+,}etcd-${i}=http://$(echo $PEERS|cut -d, -f $i):2380"
-            #   echo ${CLUSTER}
-            # done         
-            # start etcd. If cluster is already initialized the `--initial-*` options will be ignored.
             exec etcd --name ${NAME} \
               -listen-peer-urls http://0.0.0.0:2380 \
               -listen-client-urls http://0.0.0.0:2379 \
