@@ -5,16 +5,21 @@ metadata:
   annotations:
     caas.version: 0.1.0 
   labels:
-    io.caas.service: apiserver
-  name: api-tt
+    io.caas.service: k8s-cp
+  name: cp-tt
 spec:
   replicas: 1
   template:
     metadata:
       labels:
-        io.caas.service: apiserver
+        io.caas.service: k8s-cp
     spec:
       hostNetwork: true
+      restartPolicy: Always
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "k8s-controller-2"
       containers:
       - name: apiserver
         image: uhub.service.ucloud.cn/wxyz/hyperkube:v1.8.4
@@ -51,10 +56,49 @@ spec:
         volumeMounts:
         - mountPath: /etc/k8s
           name: etc-k8s
+      - name: control-manager
+        image: uhub.service.ucloud.cn/wxyz/hyperkube:v1.8.4
+        command: 
+        - /controller-manager
+        - --address=127.0.0.1 
+        - --controllers=*,bootstrapsigner,tokencleaner
+        - --cluster-name="k8s-u1"
+        - --enable-load-reader=true
+        - --kubeconfig=/etc/k8s/cm.kcf
+        - --leader-elect=true
+        - --log-cadvisor-usage=true
+        - --logtostderr=true
+        - --v=2
+        - --cluster-cidr=10.100.0.0/24
+        - --profiling=true
+        - --service-cluster-ip-range=192.168.0.0/24
+        - --cluster-signing-cert-file=/etc/k8s/ssl/ca.crt 
+        - --cluster-signing-key-file=/etc/k8s/ssl/ca.key 
+        - --root-ca-file=/etc/k8s/ssl/ca.crt
+        - --service-account-private-key-file=/etc/k8s/ssl/sa.key
+        - --use-service-account-credentials=true
+        volumeMounts:
+        - mountPath: /etc/k8s
+          name: etc-k8s
+      - name: scheduler
+        image: uhub.service.ucloud.cn/wxyz/hyperkube:v1.8.4
+        command: 
+        - /scheduler
+        - --address=127.0.0.1
+        - --enable-load-reader=true
+        - --kubeconfig=/etc/k8s/sch.kcf
+        - --leader-elect=true
+        - --log-cadvisor-usage=true
+        - --logtostderr=true
+        - --v=2
+        - --profiling=true
+        volumeMounts:
+        - mountPath: /etc/k8s
+          name: etc-k8s
       volumes:
       - name: etc-k8s
         hostPath:
           # directory location on host
           path: /var/lib/k8s
-      restartPolicy: Always
+      
 

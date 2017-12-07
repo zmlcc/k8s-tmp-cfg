@@ -1,0 +1,43 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    caas.version: 0.1.0 
+  labels:
+    io.caas.service: kube-sch
+  name: sch-tt
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        io.caas.service: kube-sch
+    spec:
+      hostNetwork: true
+      restartPolicy: Always
+      hostAliases:
+      - ip: "10.19.174.8"
+        hostnames:
+        - "k8s-controller-2"
+      containers:
+      - name: scheduler
+        image: uhub.service.ucloud.cn/wxyz/hyperkube:v1.8.4
+        command: 
+        - /scheduler
+        - --address=127.0.0.1
+        - --enable-load-reader=true
+        - --kubeconfig=/etc/k8s/sch.kcf
+        - --leader-elect=true
+        - --log-cadvisor-usage=true
+        - --logtostderr=true
+        - --v=2
+        - --profiling=true
+        volumeMounts:
+        - mountPath: /etc/k8s
+          name: etc-k8s
+      volumes:
+      - name: etc-k8s
+        hostPath:
+          # directory location on host
+          path: /var/lib/k8s
