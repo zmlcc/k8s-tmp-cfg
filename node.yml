@@ -1,0 +1,120 @@
+---
+apiVersion: extensions/v1beta1
+kind: Pod
+metadata:
+  annotations:
+    caas.version: 0.1.0 
+  labels:
+    io.caas.service: apiserver
+  name: api-tt
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        io.caas.service: apiserver
+    spec:
+      hostNetwork: true
+      containers:
+      - name: apiserver
+        image: uhub.service.ucloud.cn/wxyz/hyperkube:v1.8.4
+        env:
+        - name: INFRA_IMAGE
+          value: "uhub.service.ucloud.cn/wxyz/gc-pause-amd64:3.0"
+        - name: BOOTSTRAP_KUBECONFIG
+          value: "/etc/k8s/bootstrap.kcf"
+        - name: CLUSTER_DNS
+          value: "10.100.0.1"
+        - name: 
+        command: 
+        - /kubelet
+        - --address=0.0.0.0
+        - --enable-debugging-handlers=true
+        - --enable-server=true
+        - --read-only-port=0
+        - --node-labels="AAA=k4"
+        - --register-node=true
+        - --anonymous-auth=false
+        - --authorization-mode="AlwaysAllow"
+        - --bootstrap-kubeconfig=$(BOOTSTRAP_KUBECONFIG)
+        - --allow-privileged=false
+        - --containerized=true
+        - --docker-disable-shared-pid=true
+        - --docker-only=true
+        - --runtime-cgroups=/kubereserved
+        - --enable-load-reader=true
+        - --fail-swap-on=true
+        - --image-pull-progress-deadline=5m
+        - --runtime-request-timeout=1m
+        - --streaming-connection-idle-timeout=30m
+        - --log-cadvisor-usage=true
+        - --logtostderr=true
+        - --v=2
+        - --cluster-dns=$(CLUSTER_DNS)
+        - --cluster-domain=cluster.local
+        - --network-plugin=cni
+        - --network-plugin-mtu=1454
+        - --pod-infra-container-image=$(INFRA_IMAGE)
+        - --pods-per-core=6
+        - --cgroup-driver="cgroupfs"
+        - --cgroups-per-qos=true
+        - --kubelet-cgroups=/kubereserved
+        volumeMounts:
+        - mountPath: /etc/k8s
+          name: etc-k8s
+        - mountPath: /dev
+          name: host-dev
+        - mountPath: /var/lib/docker
+          name: host-docker
+        - mountPath: /var/run
+          name: host-var-run
+        - mountPath: /run
+          name: host-run
+        - mountPath: /var/lib/kubelet
+          name: host-kubelet
+        - mountPath: /sys
+          name: host-sys
+          readOnly: true
+      volumes:
+      - name: etc-k8s
+        hostPath:
+          # directory location on host
+          path: /var/lib/k8s
+          type: Directory
+      - name: host-dev
+          path: /dev
+          type: Directory
+      - name: host-docker
+          path: /var/lib/docker
+          type: Directory
+      - name: host-var-run
+          path: /var/run
+          type: Directory
+      - name: host-run
+          path: /run
+          type: Directory
+      - name: host-kubelet
+          path: /var/lib/kubelet
+          type: Directory
+      - name: host-sys
+          path: /sys
+          type: Directory
+      
+      
+      restartPolicy: Always
+
+
+
+#   --kubeconfig=/etc/kubernetes/kubelet.conf \\
+
+
+
+
+
+# "/dev:/dev:rw",
+# "/var/lib/docker:/var/lib/docker:rw",
+# "/var/run:/var/run:rw",
+# "/var/log:/var/log:shared",
+# "/run:/run:rw",
+# "/var/lib/kubelet:/var/lib/kubelet:shared",
+# "/sys:/sys:ro"
